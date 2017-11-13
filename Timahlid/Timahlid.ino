@@ -1,4 +1,4 @@
-#include "Adafruit_HT1632.h"
+ #include "Adafruit_HT1632.h"
 
 
 #define HT_DATA 2
@@ -15,16 +15,10 @@ Adafruit_HT1632LEDMatrix matrix2 = Adafruit_HT1632LEDMatrix(HT_DATA, HT_WR, 8,9,
 
 
 // Breitur skilgreindar
-char function = '0';
-int index;
-int laser = 2;
 double t1;
 double t2;
 double timamunur;
 double laptime[5];
-
-
-
 
 void setup() {
   Serial.begin(9600);
@@ -52,70 +46,78 @@ void loop() {
 }
 
 void lasertest(){
-  matrix.clearScreen();
-  matrix.setCursor(0,0);
-  matrix.print(digitalRead(laser));
-  matrix.writeScreen();
+  while(1){
+   matrix.clearScreen();
+   matrix.setCursor(0,0);
+   matrix.print(digitalRead(A0));
+   matrix.writeScreen();
+  }
   }
 
 void endurance(){
-  matrix.clearScreen();
-  matrix.setCursor(0, 0);
-  matrix.print("ok");
-  matrix.writeScreen();
-  while(digitalRead(A1)==1);
-  while(digitalRead(A0)==0);
-  t1 = millis();
+  skiltiPrint("ok", matrix);
+  
+  while(digitalRead(A1)==1);  //byrjar ekki tímatöku nema rofi sé á
+  while(digitalRead(A0)==0);  //byrjar tímatöku þegar laser er fyrst rofinn
+  t1 = millis();              //upphafstími
   
   for(int i = 1; i <= 5; i++) {
-   while(digitalRead(A0)==0);
-   
-   laptime[i] = millis();
-   
-   matrix.clearScreen();
-   matrix.setCursor(0, 0);
-   matrix.print(laptime[i]/1000);
-   matrix.writeScreen();
-   delay(2000);
-   }
-   
-  matrix.clearScreen();
-  matrix.setCursor(0, 0);
-  matrix.print("end");
-  matrix.writeScreen(); 
+    while(digitalRead(A0)==0) {    //sýnir rauntímann þangað til laser er rofinn
+      skiltiPrint(String((millis()-t1)/1000), matrix);    
+      delay(10);
+    } 
+    if(i==1){
+      laptime[i] = millis()-t1;  //skráir fyrsta laptime
+    }
+    else {
+      laptime[i]=millis()-laptime[i-1];  //skráir seinni laptimes
+    }
+    skiltiPrint(String(laptime[i]/1000), matrix);
+    delay(2000);
+  }
+
+  skiltiPrint("Mark!",matrix);
+  delay(2000);
+  skiltiPrint("Tímar:",matrix);
+  delay(2000);
+  String stringLaptime[5];
+  
+  for(int i = 1; i<=5; i++) {
+    skiltiPrint(String(laptime[i]),matrix);
+//    stringLaptime[i] = String(laptime[i]);
+//    skiltiPrint("Hringur "+String(i)+": "+stringLaptime[i], matrix);
+    delay(2000);
+  }
+  
   delay(2000); 
 }
 
 void acceleration(){
-  matrix.clearScreen();
-  matrix.setCursor(0, 0);
-  matrix.print("ok");
-  matrix.writeScreen();
-  while(digitalRead(A2)==1){}
+  skiltiPrint("ok", matrix);
   
-  t1 = millis();
-  //Serial.println("Timataka hafin");
+  while(digitalRead(A2)==1){}  //bíður eftir að tímataka hefjist
   
-  matrix.clearScreen();
-  matrix.setCursor(0, 0);
-  matrix.print("start");
-  matrix.writeScreen();
-   
-  while(digitalRead(A0)==0) {
-    matrix.clearScreen();
-    matrix.setCursor(0, 0);
-    matrix.print((millis()-t1)/1000);
-    matrix.writeScreen();
+  t1 = millis();    //skráir upphafstíma  
+  while(digitalRead(A0)==0) {    //sýnir rauntímann þangað til laser er rofinn
+    skiltiPrint(String((millis()-t1)/1000), matrix);    
     delay(10);
-    }
-  t2 = millis();
-  timamunur = (t2-t1)/1000;
-//  Serial.print(timamunur);
-//  Serial.println(" s");
-     
-  matrix.clearScreen();
-  matrix.setCursor(0, 0);
-  matrix.print(timamunur);
-  matrix.writeScreen();
-  while(digitalRead(A2)==0){}
+  } 
+  t2 = millis();        //skráir lokatíma
+  timamunur = (t2-t1)/1000; 
+  
+  skiltiPrint(String(timamunur), matrix); //prentar út lokatíma
+  
+  while(digitalRead(A2)==0){}    //bíður eftir að næstu keyrslu
 }
+
+
+// prentar út einföld skilaboð, þyrft að skrifa ný föll föll fyrir mismunandi tilfelli t.d. tími eða texti og blöndu af báðu
+// gæti t.d. tekið báða panela og cursor sem input
+void skiltiPrint (String str, Adafruit_HT1632LEDMatrix skilti ) { 
+  skilti.clearScreen();
+  skilti.setCursor(0, 0);
+  skilti.print(str);
+  skilti.writeScreen();  
+}
+
+
